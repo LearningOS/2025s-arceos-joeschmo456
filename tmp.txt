@@ -1,0 +1,10 @@
+No color
+print_with_color fault
+ramfs_rename fault
+alt_alloc default
+support_hashmap default
+File 'payload/mapfile_c/mapfile' doesn't exist!
+sys_mmap default
+File 'payload/skernel2/skernel2' doesn't exist!
+simple_hv default
+0
