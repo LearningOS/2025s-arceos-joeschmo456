@@ -1,9 +1,9 @@
-use alloc::vec::Vec;
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 use axerrno::AxResult;
-use memory_addr::VirtAddr;
 use axhal::paging::MappingFlags;
 use axmm::AddrSpace;
+use memory_addr::VirtAddr;
 
 pub struct VmDev {
     start: VirtAddr,
@@ -15,7 +15,7 @@ impl VmDev {
         Self { start, size }
     }
 
-    pub fn handle_mmio(&self, addr: VirtAddr , aspace: &mut AddrSpace) -> AxResult {
+    pub fn handle_mmio(&self, addr: VirtAddr, aspace: &mut AddrSpace) -> AxResult {
         let mapping_flags = MappingFlags::from_bits(0xf).unwrap();
         // Passthrough-Mode
         aspace.map_linear(addr, addr.as_usize().into(), 4096, mapping_flags)
@@ -27,12 +27,14 @@ impl VmDev {
 }
 
 pub struct VmDevGroup {
-    devices: Vec<Arc<VmDev>>
+    devices: Vec<Arc<VmDev>>,
 }
 
 impl VmDevGroup {
     pub fn new() -> Self {
-        Self { devices: Vec::new() }
+        Self {
+            devices: Vec::new(),
+        }
     }
 
     pub fn add_dev(&mut self, addr: VirtAddr, size: usize) {

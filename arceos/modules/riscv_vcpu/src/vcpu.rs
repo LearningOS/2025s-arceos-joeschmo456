@@ -13,8 +13,8 @@ use super::csrs::{traps, RiscvCsrTrait, CSR};
 use super::sbi::{BaseFunction, PmuFunction, RemoteFenceFunction, SbiMessage};
 
 use super::regs::{GeneralPurposeRegisters, GprIndex};
-use memory_addr::{VirtAddr, PhysAddr};
 use axhal::paging::MappingFlags;
+use memory_addr::{PhysAddr, VirtAddr};
 
 /// Guest physical address.
 pub type GuestPhysAddr = VirtAddr;

@@ -1,12 +1,12 @@
-use std::io::{self, Read};
-use std::io::SeekFrom;
-use std::io::Seek;
-use std::fs::File;
-use alloc::vec::Vec;
 use alloc::vec;
+use alloc::vec::Vec;
+use axhal::mem::{MemoryAddr, VirtAddr, PAGE_SIZE_4K};
 use axhal::paging::MappingFlags;
-use axhal::mem::{PAGE_SIZE_4K, VirtAddr, MemoryAddr};
 use axmm::AddrSpace;
+use std::fs::File;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::{self, Read};
 
 use elf::abi::{PT_INTERP, PT_LOAD};
 use elf::endian::AnyEndian;
@@ -24,15 +24,22 @@ pub fn load_user_app(fname: &str, uspace: &mut AddrSpace) -> io::Result<usize> {
     for phdr in &phdrs {
         ax_println!(
             "phdr: offset: {:#X}=>{:#X} size: {:#X}=>{:#X}",
-            phdr.p_offset, phdr.p_vaddr, phdr.p_filesz, phdr.p_memsz
+            phdr.p_offset,
+            phdr.p_vaddr,
+            phdr.p_filesz,
+            phdr.p_memsz
         );
 
         let vaddr = VirtAddr::from(phdr.p_vaddr as usize).align_down_4k();
-        let vaddr_end = VirtAddr::from((phdr.p_vaddr+phdr.p_memsz) as usize)
-            .align_up_4k();
+        let vaddr_end = VirtAddr::from((phdr.p_vaddr + phdr.p_memsz) as usize).align_up_4k();
 
         ax_println!("{:#x} - {:#x}", vaddr, vaddr_end);
-        uspace.map_alloc(vaddr, vaddr_end-vaddr, MappingFlags::READ|MappingFlags::WRITE|MappingFlags::EXECUTE|MappingFlags::USER, true)?;
+        uspace.map_alloc(
+            vaddr,
+            vaddr_end - vaddr,
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE | MappingFlags::USER,
+            true,
+        )?;
 
         let mut data = vec![0u8; phdr.p_memsz as usize];
         file.seek(SeekFrom::Start(phdr.p_offset))?;
@@ -72,5 +79,10 @@ fn load_elf_phdrs(file: &mut File) -> io::Result<(Vec<ProgramHeader>, usize, usi
         .iter()
         .filter(|phdr| phdr.p_type == PT_LOAD || phdr.p_type == PT_INTERP)
         .collect();
-    Ok((phdrs, ehdr.e_entry as usize, ehdr.e_phoff as usize, ehdr.e_phnum as usize))
+    Ok((
+        phdrs,
+        ehdr.e_entry as usize,
+        ehdr.e_phoff as usize,
+        ehdr.e_phnum as usize,
+    ))
 }

@@ -7,8 +7,8 @@ extern crate axstd as std;
 
 mod ramfs;
 
-use std::io::{self, prelude::*};
 use std::fs::{self, File};
+use std::io::{self, prelude::*};
 
 fn create_file(fname: &str, text: &str) -> io::Result<()> {
     println!("Create '{}' and write [{}] ...", fname, text);

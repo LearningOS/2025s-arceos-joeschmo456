@@ -3,28 +3,28 @@
 #![feature(asm_const)]
 #![feature(riscv_ext_intrinsics)]
 
+extern crate alloc;
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
-extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
+mod csrs;
+mod loader;
+mod regs;
+mod sbi;
 mod task;
 mod vcpu;
-mod regs;
-mod csrs;
-mod sbi;
-mod loader;
 
-use vcpu::VmCpuRegisters;
-use riscv::register::{scause, sstatus};
-use csrs::defs::hstatus;
-use tock_registers::LocalRegisterCopy;
-use csrs::{RiscvCsrTrait, CSR};
-use vcpu::_run_guest;
-use sbi::SbiMessage;
-use loader::load_vm_image;
 use axhal::mem::PhysAddr;
+use csrs::defs::hstatus;
+use csrs::{RiscvCsrTrait, CSR};
+use loader::load_vm_image;
+use riscv::register::{scause, sstatus};
+use sbi::SbiMessage;
+use tock_registers::LocalRegisterCopy;
+use vcpu::VmCpuRegisters;
+use vcpu::_run_guest;
 
 const VM_ENTRY: usize = 0x8020_0000;
 
@@ -85,13 +85,13 @@ fn vmexit_handler(ctx: &VmCpuRegisters) {
                 match msg {
                     SbiMessage::Reset(_) => {
                         ax_println!("Shutdown vm normally!");
-                    },
+                    }
                     _ => todo!(),
                 }
             } else {
                 panic!("bad sbi message! ");
             }
-        },
+        }
         _ => {
             panic!(
                 "Unhandled trap: {:?}, sepc: {:#x}, stval: {:#x}",
@@ -105,9 +105,8 @@ fn vmexit_handler(ctx: &VmCpuRegisters) {
 
 fn prepare_guest_context(ctx: &mut VmCpuRegisters) {
     // Set hstatus
-    let mut hstatus = LocalRegisterCopy::<usize, hstatus::Register>::new(
-        riscv::register::hstatus::read().bits(),
-    );
+    let mut hstatus =
+        LocalRegisterCopy::<usize, hstatus::Register>::new(riscv::register::hstatus::read().bits());
     // Set Guest bit in order to return to guest mode.
     hstatus.modify(hstatus::spv::Guest);
     // Set SPVP bit in order to accessing VS-mode memory from HS-mode.

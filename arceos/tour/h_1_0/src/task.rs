@@ -1,8 +1,8 @@
 use alloc::sync::Arc;
 
+use crate::vcpu::VmCpuRegisters;
 use axmm::AddrSpace;
 use axsync::Mutex;
-use crate::vcpu::VmCpuRegisters;
 
 /// Task extended data for the monolithic kernel.
 pub struct TaskExt {
@@ -14,10 +14,7 @@ pub struct TaskExt {
 
 impl TaskExt {
     pub const fn new(vcpu: VmCpuRegisters, aspace: Arc<Mutex<AddrSpace>>) -> Self {
-        Self {
-            vcpu,
-            aspace,
-        }
+        Self { vcpu, aspace }
     }
 }
 

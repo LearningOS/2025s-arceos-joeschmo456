@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
-use core::ffi::c_void;
+use arceos_posix_api as api;
+use axerrno::LinuxError;
 use axhal::arch::TrapFrame;
 use axhal::trap::{register_trap_handler, SYSCALL};
-use axerrno::LinuxError;
 use axtask::current;
 use axtask::TaskExtRef;
-use arceos_posix_api as api;
+use core::ffi::c_void;
 
 const SYS_IOCTL: usize = 29;
 const SYS_WRITEV: usize = 66;
@@ -18,17 +18,17 @@ const SYS_SET_TID_ADDRESS: usize = 96;
 fn handle_syscall(tf: &TrapFrame, syscall_num: usize) -> isize {
     ax_println!("handle_syscall [{}] ...", syscall_num);
     let ret = match syscall_num {
-         SYS_IOCTL => sys_ioctl(tf.arg0() as _, tf.arg1() as _, tf.arg2() as _) as _,
+        SYS_IOCTL => sys_ioctl(tf.arg0() as _, tf.arg1() as _, tf.arg2() as _) as _,
         SYS_SET_TID_ADDRESS => sys_set_tid_address(tf.arg0() as _),
         SYS_WRITEV => sys_writev(tf.arg0() as _, tf.arg1() as _, tf.arg2() as _),
         SYS_EXIT_GROUP => {
             ax_println!("[SYS_EXIT_GROUP]: system is exiting ..");
             axtask::exit(tf.arg0() as _)
-        },
+        }
         SYS_EXIT => {
             ax_println!("[SYS_EXIT]: system is exiting ..");
             axtask::exit(tf.arg0() as _)
-        },
+        }
         _ => {
             ax_println!("Unimplemented syscall: {}", syscall_num);
             -LinuxError::ENOSYS.code() as _

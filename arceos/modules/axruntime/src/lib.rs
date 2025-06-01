@@ -235,7 +235,10 @@ fn init_allocator() {
     use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
 
     info!("Initialize global memory allocator...");
-    info!("  use {} allocator.", alt_axalloc::global_allocator().name());
+    info!(
+        "  use {} allocator.",
+        alt_axalloc::global_allocator().name()
+    );
 
     let mut max_region_size = 0;
     let mut max_region_paddr = 0.into();

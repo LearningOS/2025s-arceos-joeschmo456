@@ -1,24 +1,24 @@
 #![cfg_attr(feature = "axstd", no_std)]
 #![cfg_attr(feature = "axstd", no_main)]
 
+extern crate alloc;
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
-extern crate alloc;
 
 #[macro_use]
 extern crate axlog;
 
-mod task;
-mod syscall;
 mod loader;
+mod syscall;
+mod task;
 
-use axstd::io;
-use axhal::paging::MappingFlags;
+use alloc::sync::Arc;
 use axhal::arch::UspaceContext;
 use axhal::mem::VirtAddr;
-use axsync::Mutex;
-use alloc::sync::Arc;
+use axhal::paging::MappingFlags;
 use axmm::AddrSpace;
+use axstd::io;
+use axsync::Mutex;
 use loader::load_user_app;
 
 const USER_STACK_SIZE: usize = 0x10000;
@@ -55,13 +55,16 @@ fn init_user_stack(uspace: &mut AddrSpace, populating: bool) -> io::Result<VirtA
     let ustack_vaddr = ustack_top - crate::USER_STACK_SIZE;
     ax_println!(
         "Mapping user stack: {:#x?} -> {:#x?}",
-        ustack_vaddr, ustack_top
-    );
-    uspace.map_alloc(
         ustack_vaddr,
-        crate::USER_STACK_SIZE,
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        populating,
-    ).unwrap();
+        ustack_top
+    );
+    uspace
+        .map_alloc(
+            ustack_vaddr,
+            crate::USER_STACK_SIZE,
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+            populating,
+        )
+        .unwrap();
     Ok(ustack_top)
 }
