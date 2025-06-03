@@ -7,7 +7,9 @@ use axhal::paging::MappingFlags;
 use axhal::trap::{register_trap_handler, SYSCALL};
 use axtask::current;
 use axtask::TaskExtRef;
+use axhal::mem::{PAGE_SIZE_4K, phys_to_virt};
 use core::ffi::{c_char, c_int, c_void};
+use memory_addr::addr_range;
 
 const SYS_IOCTL: usize = 29;
 const SYS_OPENAT: usize = 56;
@@ -20,6 +22,7 @@ const SYS_EXIT_GROUP: usize = 94;
 const SYS_SET_TID_ADDRESS: usize = 96;
 const SYS_MMAP: usize = 222;
 
+const MAX_MMAP_LEN: usize = 512;
 const AT_FDCWD: i32 = -100;
 
 /// Macro to generate syscall body
@@ -145,7 +148,46 @@ fn sys_mmap(
     fd: i32,
     _offset: isize,
 ) -> isize {
-    unimplemented!("no sys_mmap!");
+    // unimplemented!("no sys_mmap!");
+    if length == 0 {
+        return -1;
+    }
+    if length > MAX_MMAP_LEN {
+        return -1;
+    }
+    let mut buf: [u8; 512] = [0; 512];
+    let buf_addr = &mut buf as *mut u8 as usize as *mut c_void;
+    let page_count = (length + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K;
+    let map_len = page_count * PAGE_SIZE_4K;
+    api::sys_lseek(fd, _offset as i64, 0);
+    api::sys_read(fd, buf_addr, length);
+    let mut vaddr = addr as usize;
+    let cur = current();
+    let mut uspace = cur.task_ext().aspace.lock();
+
+    if addr.is_null() {
+        if let Some(va) = uspace.find_free_area(uspace.base(), length, addr_range!(uspace.base()..uspace.end())) {
+            vaddr = va.into();
+        } else {
+            return -1;
+        }
+    } else {
+        vaddr = addr as usize;
+    }
+    uspace.map_alloc(vaddr.into(), PAGE_SIZE_4K * page_count, MappingFlags::READ|MappingFlags::WRITE|MappingFlags::EXECUTE|MappingFlags::USER, true).unwrap();
+    let (paddr, _, _) = uspace
+        .page_table()
+        .query(vaddr.into())
+        .unwrap_or_else(|_| panic!("Mapping failed for segment: {:#x}", vaddr));
+
+    unsafe {
+        core::ptr::copy_nonoverlapping(
+            buf.as_ptr(),
+            phys_to_virt(paddr).as_mut_ptr(),
+            PAGE_SIZE_4K * page_count,
+        );
+    }
+    vaddr as isize
 }
 
 fn sys_openat(dfd: c_int, fname: *const c_char, flags: c_int, mode: api::ctypes::mode_t) -> isize {
